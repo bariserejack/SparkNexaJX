@@ -1,11 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Stack } from 'expo-router';
 
-export default function TabLayout() {
+export default function AuthLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" />
+    <Stack initialRouteName="signup" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="signup" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="logout" />
     </Stack>
   );
 }

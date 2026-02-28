@@ -1,19 +1,22 @@
-const tintColorLight = '#2f95dc';
-const tintColorDark = '#fff';
+import { Theme } from './Theme';
+
+// simple color lookup used by Themed components (Text/View)
+// we only keep the minimal fields needed by the generated helpers.
+// values are derived from the main Theme so they stay in sync.
 
 export default {
   light: {
-    text: '#000',
-    background: '#fff',
-    tint: tintColorLight,
+    text: Theme.light.text,
+    background: Theme.light.background,
+    tint: Theme.brand.primary,
     tabIconDefault: '#ccc',
-    tabIconSelected: tintColorLight,
+    tabIconSelected: Theme.brand.primary,
   },
   dark: {
-    text: '#fff',
-    background: '#000',
-    tint: tintColorDark,
+    text: Theme.dark.text,
+    background: Theme.dark.background,
+    tint: Theme.brand.primary,
     tabIconDefault: '#ccc',
-    tabIconSelected: tintColorDark,
+    tabIconSelected: Theme.brand.primary,
   },
 };
