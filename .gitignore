@@ -1,7 +1,20 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.vscode
+.idea
+*.code-workspace
+
+# Dependencies
 node_modules/
+package-lock.json
+yarn.lock
 
 # Expo
 .expo/
@@ -20,21 +33,24 @@ web-build/
 # Metro
 .metro-health-check*
 
-# debug
+# Debug/Logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
 
-# macOS
-.DS_Store
+# Files
 *.pem
 
-# local env files
+# Local env files
 .env*.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-# generated native folders
+# Generated native folders
 /ios
 /android
+
+# Build files
+build/
