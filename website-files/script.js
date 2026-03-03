@@ -272,6 +272,177 @@ if (newsletterForm) {
     });
 }
 
+// ===== HERO ORB BACKGROUND =====
+const initHeroOrbBackground = () => {
+    const hero = document.querySelector('.hero');
+    const canvas = document.getElementById('heroOrbCanvas');
+
+    if (!hero || !canvas) {
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        return;
+    }
+
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const pointer = {
+        x: 0.5,
+        y: 0.5,
+        targetX: 0.5,
+        targetY: 0.5
+    };
+
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let animationFrameId = 0;
+
+    const orbs = [
+        { baseX: 0.18, baseY: 0.28, radius: 0.42, color: '0, 212, 255', alpha: 0.30, speedX: 0.00017, speedY: 0.00012, ampX: 0.07, ampY: 0.05, depth: 0.07, breathe: 0.00045, phase: 0.2 },
+        { baseX: 0.74, baseY: 0.24, radius: 0.32, color: '124, 58, 237', alpha: 0.28, speedX: 0.00012, speedY: 0.00016, ampX: 0.05, ampY: 0.08, depth: 0.10, breathe: 0.00038, phase: 1.4 },
+        { baseX: 0.52, baseY: 0.72, radius: 0.36, color: '245, 158, 11', alpha: 0.26, speedX: 0.00010, speedY: 0.00014, ampX: 0.06, ampY: 0.07, depth: 0.08, breathe: 0.00042, phase: 2.3 },
+        { baseX: 0.84, baseY: 0.64, radius: 0.22, color: '56, 189, 248', alpha: 0.24, speedX: 0.00022, speedY: 0.00011, ampX: 0.04, ampY: 0.04, depth: 0.12, breathe: 0.00050, phase: 3.1 }
+    ];
+
+    const resizeCanvas = () => {
+        const rect = hero.getBoundingClientRect();
+        width = Math.max(1, Math.floor(rect.width));
+        height = Math.max(1, Math.floor(rect.height));
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const drawFrame = (time) => {
+        ctx.clearRect(0, 0, width, height);
+
+        if (!reducedMotionQuery.matches) {
+            pointer.x += (pointer.targetX - pointer.x) * 0.05;
+            pointer.y += (pointer.targetY - pointer.y) * 0.05;
+        }
+
+        const pointerOffsetX = pointer.x - 0.5;
+        const pointerOffsetY = pointer.y - 0.5;
+        const minSide = Math.min(width, height);
+
+        ctx.globalCompositeOperation = 'lighter';
+
+        orbs.forEach((orb) => {
+            const driftX = Math.sin((time * orb.speedX) + orb.phase) * orb.ampX;
+            const driftY = Math.cos((time * orb.speedY) + orb.phase) * orb.ampY;
+            const interactX = pointerOffsetX * orb.depth;
+            const interactY = pointerOffsetY * orb.depth;
+            const pulse = 1 + (Math.sin((time * orb.breathe) + orb.phase) * 0.08);
+
+            const x = (orb.baseX + driftX + interactX) * width;
+            const y = (orb.baseY + driftY + interactY) * height;
+            const radius = Math.max(120, minSide * orb.radius * pulse);
+
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            gradient.addColorStop(0, `rgba(${orb.color}, ${orb.alpha})`);
+            gradient.addColorStop(0.45, `rgba(${orb.color}, ${orb.alpha * 0.45})`);
+            gradient.addColorStop(1, `rgba(${orb.color}, 0)`);
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        const vignette = ctx.createRadialGradient(
+            width / 2,
+            height / 2,
+            minSide * 0.2,
+            width / 2,
+            height / 2,
+            Math.max(width, height) * 0.8
+        );
+
+        vignette.addColorStop(0, 'rgba(10, 10, 10, 0)');
+        vignette.addColorStop(1, 'rgba(10, 10, 10, 0.28)');
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, width, height);
+    };
+
+    const animate = (time) => {
+        drawFrame(time);
+        animationFrameId = window.requestAnimationFrame(animate);
+    };
+
+    const handlePointerMove = (event) => {
+        const rect = hero.getBoundingClientRect();
+        pointer.targetX = (event.clientX - rect.left) / rect.width;
+        pointer.targetY = (event.clientY - rect.top) / rect.height;
+    };
+
+    const handlePointerLeave = () => {
+        pointer.targetX = 0.5;
+        pointer.targetY = 0.5;
+    };
+
+    const startAnimation = () => {
+        if (!animationFrameId) {
+            animationFrameId = window.requestAnimationFrame(animate);
+        }
+    };
+
+    const stopAnimation = () => {
+        if (animationFrameId) {
+            window.cancelAnimationFrame(animationFrameId);
+            animationFrameId = 0;
+        }
+    };
+
+    const handleReducedMotionChange = () => {
+        if (reducedMotionQuery.matches) {
+            stopAnimation();
+            drawFrame(performance.now());
+            return;
+        }
+
+        startAnimation();
+    };
+
+    resizeCanvas();
+    drawFrame(performance.now());
+
+    window.addEventListener('resize', resizeCanvas, { passive: true });
+    hero.addEventListener('pointermove', handlePointerMove, { passive: true });
+    hero.addEventListener('pointerleave', handlePointerLeave, { passive: true });
+    reducedMotionQuery.addEventListener('change', handleReducedMotionChange);
+
+    if (reducedMotionQuery.matches) {
+        drawFrame(performance.now());
+    } else {
+        startAnimation();
+    }
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            const [entry] = entries;
+
+            if (entry.isIntersecting && !reducedMotionQuery.matches) {
+                startAnimation();
+            } else {
+                stopAnimation();
+            }
+        }, { threshold: 0.08 });
+
+        observer.observe(hero);
+    }
+};
+
+initHeroOrbBackground();
+
 // ===== CURSOR EFFECT (OPTIONAL - ADVANCED) =====
 // Uncomment if you want a custom cursor effect
 /*
