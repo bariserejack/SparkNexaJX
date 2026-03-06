@@ -452,14 +452,14 @@
                     <li>Certificate of completion</li>
                 </ul>
             </div>
-            <div class="modal-payment" id="modalPayment" style="display: none;">
+            <div class="modal-payment" id="modalPayment">
                 <h3>Payment Method</h3>
                 <p class="payment-info">We accept cryptocurrency payments via Bybit exchange.</p>
                 <div class="payment-address">
                     <label>Bybit Exchange Address:</label>
                     <div class="address-box">
                         <code id="paymentAddress">THpcurVPhNnfKnBmTEYEVgmNBRYYX6q4m1</code>
-                        <button class="copy-btn" onclick="copyAddress()"><i class="fas fa-copy"></i></button>
+                        <button class="copy-btn" type="button" onclick="copyAddress()" aria-label="Copy payment address" title="Copy payment address"><i class="fas fa-copy"></i></button>
                     </div>
                 </div>
             </div>

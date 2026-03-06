@@ -5,26 +5,59 @@ import {
   Modal, Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useNavigation } from 'expo-router';
+import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { Theme } from '../constants/Theme';
 import { useAppTheme } from '../lib/theme';
 
 const { width } = Dimensions.get('window');
 
+type AppLanguage = {
+  code: string;
+  label: string;
+};
+
+const APP_LANGUAGES: AppLanguage[] = [
+  { code: 'en-US', label: 'English (United States)' },
+  { code: 'en-GB', label: 'English (United Kingdom)' },
+  { code: 'es-ES', label: 'Spanish (Spain)' },
+  { code: 'es-MX', label: 'Spanish (Mexico)' },
+  { code: 'fr-FR', label: 'French (France)' },
+  { code: 'de-DE', label: 'German (Germany)' },
+  { code: 'pt-BR', label: 'Portuguese (Brazil)' },
+  { code: 'pt-PT', label: 'Portuguese (Portugal)' },
+  { code: 'ar-SA', label: 'Arabic (Saudi Arabia)' },
+  { code: 'sw-KE', label: 'Swahili (Kenya)' },
+  { code: 'yo-NG', label: 'Yoruba (Nigeria)' },
+  { code: 'ha-NG', label: 'Hausa (Nigeria)' },
+  { code: 'ig-NG', label: 'Igbo (Nigeria)' },
+  { code: 'hi-IN', label: 'Hindi (India)' },
+  { code: 'bn-BD', label: 'Bengali (Bangladesh)' },
+  { code: 'ur-PK', label: 'Urdu (Pakistan)' },
+  { code: 'zh-CN', label: 'Chinese (China)' },
+  { code: 'zh-TW', label: 'Chinese (Taiwan)' },
+  { code: 'ja-JP', label: 'Japanese (Japan)' },
+  { code: 'ko-KR', label: 'Korean (South Korea)' },
+  { code: 'id-ID', label: 'Indonesian (Indonesia)' },
+  { code: 'vi-VN', label: 'Vietnamese (Vietnam)' },
+  { code: 'ru-RU', label: 'Russian (Russia)' },
+  { code: 'tr-TR', label: 'Turkish (Turkey)' },
+];
+
 export default function SettingsScreen() {
   const { themeMode, setThemeMode, activeTheme, isDark } = useAppTheme();
-  const navigation = useNavigation();
 
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
   const [fullName, setFullName] = useState("Alex Rivera");
   const [email, setEmail] = useState("alex.spark@nexa.io");
   const [accentColor, setAccentColor] = useState(Theme.brand?.primary || '#7367f0');
+  const [selectedLanguage, setSelectedLanguage] = useState<AppLanguage>(APP_LANGUAGES[0]);
 
   const [toggles, setToggles] = useState({
     push: true, faceId: true, aiRanking: true, autoSummary: false,
@@ -93,6 +126,8 @@ export default function SettingsScreen() {
 
           {/* --- ACCOUNT CENTER --- */}
           <SettingsSection label="Identity Node" theme={activeTheme}>
+            <MenuRow icon="person-circle-outline" label="Account" onPress={() => router.push('/account')} theme={activeTheme} />
+            <MenuRow icon="sparkles-outline" label="Profile settings" onPress={() => router.push('/profile-settings')} theme={activeTheme} />
             <MenuRow icon="person-outline" label="Personal details" theme={activeTheme} />
             <MenuRow icon="shield-checkmark-outline" label="Password and security" theme={activeTheme} />
             <MenuRow icon="notifications-outline" label="Ad preferences" theme={activeTheme} />
@@ -107,7 +142,7 @@ export default function SettingsScreen() {
             <Text style={[styles.descText, { color: activeTheme.textMuted }]}>Manage your messaging preferences and privacy.</Text>
             <MenuRow icon="archive-outline" label="Archived chats" theme={activeTheme} />
             <MenuRow icon="chatbubble-ellipses-outline" label="Message requests" theme={activeTheme} />
-            <MenuRow icon="shield-checkmark-outline" label="Privacy" theme={activeTheme} />
+            <MenuRow icon="shield-checkmark-outline" label="Privacy" onPress={() => router.push('/privacy')} theme={activeTheme} />
             <MenuRow icon="chatbubbles-outline" label="Bubbles" theme={activeTheme} />
             <MenuRow icon="image-outline" label="Manage Media Storage" theme={activeTheme} />
           </SettingsSection>
@@ -115,9 +150,10 @@ export default function SettingsScreen() {
           {/* --- TOOLS AND RESOURCES --- */}
           <SettingsSection label="Tools and resources" theme={activeTheme}>
             <Text style={[styles.descText, { color: activeTheme.textMuted }]}>Manage your privacy and security.</Text>
-            <MenuRow icon="lock-closed-outline" label="Privacy Checkup" theme={activeTheme} />
+            <MenuRow icon="lock-closed-outline" label="Privacy Checkup" onPress={() => router.push('/privacy-checkup')} theme={activeTheme} />
+            <MenuRow icon="help-circle-outline" label="Help" onPress={() => router.push('/help')} theme={activeTheme} />
             <MenuRow icon="people-outline" label="Family Center" theme={activeTheme} />
-            <MenuRow icon="eye-outline" label="Default audience settings" theme={activeTheme} />
+            <MenuRow icon="eye-outline" label="Default audience settings" onPress={() => router.push('/post-audience')} theme={activeTheme} />
           </SettingsSection>
 
           {/* --- PREFERENCES --- */}
@@ -154,8 +190,20 @@ export default function SettingsScreen() {
               </View>
             </View>
             <View style={[styles.divider, { backgroundColor: activeTheme.border }]} />
-            <MenuRow icon="language-outline" label="Language and region" theme={activeTheme} />
-            <MenuRow icon="videocam-outline" label="Media" theme={activeTheme} />
+            <TouchableOpacity onPress={() => setIsLanguageModalVisible(true)}>
+              <View style={styles.row}>
+                <View style={[styles.iconBox, { backgroundColor: activeTheme.background }]}>
+                  <Ionicons name="language-outline" size={18} color={activeTheme.text} />
+                </View>
+                <View style={styles.rowContent}>
+                  <Text style={[styles.rowLabel, { color: activeTheme.text }]}>App language</Text>
+                  <Text style={[styles.rowSub, { color: activeTheme.textMuted }]}>{selectedLanguage.label}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={activeTheme.textMuted} />
+              </View>
+            </TouchableOpacity>
+            <View style={[styles.divider, { backgroundColor: activeTheme.border, marginLeft: 50 }]} />
+            <MenuRow icon="folder-open-outline" label="Storage and data" onPress={() => router.push('/storage-data')} theme={activeTheme} />
             <MenuRow icon="timer-outline" label="Time management" theme={activeTheme} />
             <MenuRow icon="globe-outline" label="Browser" theme={activeTheme} />
             <MenuRow icon="camera-outline" label="Camera roll suggestions" theme={activeTheme} />
@@ -194,7 +242,7 @@ export default function SettingsScreen() {
               right={<Switch value={toggles.faceId} onValueChange={() => updateToggle('faceId')} trackColor={{true: accentColor}} />}
               theme={activeTheme} />
             <MenuRow icon="shield-half-outline" label="Neural Encryption" sub="AES-256 Active" theme={activeTheme} />
-            <MenuRow icon="people-circle-outline" label="How people find and contact you" theme={activeTheme} />
+            <MenuRow icon="people-circle-outline" label="How people find and contact you" onPress={() => router.push('/privacy')} theme={activeTheme} />
           </SettingsSection>
 
           {/* --- COMMUNITY STANDARDS & POLICIES --- */}
@@ -223,6 +271,43 @@ export default function SettingsScreen() {
 
         </ScrollView>
       </SafeAreaView>
+
+      {/* --- APP LANGUAGE MODAL --- */}
+      <Modal visible={isLanguageModalVisible} animationType="slide" presentationStyle="overFullScreen" transparent>
+        <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={[styles.modalContent, { justifyContent: 'flex-end' }]}>
+          <View style={[styles.languageModalBody, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
+            <View style={styles.languageModalHeader}>
+              <Text style={[styles.languageModalTitle, { color: activeTheme.text }]}>App language</Text>
+              <TouchableOpacity onPress={() => setIsLanguageModalVisible(false)}>
+                <Ionicons name="close-outline" size={24} color={activeTheme.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.languageList}>
+              {APP_LANGUAGES.map((language) => {
+                const isSelected = selectedLanguage.code === language.code;
+                return (
+                  <TouchableOpacity
+                    key={language.code}
+                    style={styles.languageOption}
+                    onPress={() => {
+                      setSelectedLanguage(language);
+                      Haptics.selectionAsync();
+                      setIsLanguageModalVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.rowLabel, { color: activeTheme.text }]}>{language.label}</Text>
+                    {isSelected ? (
+                      <Ionicons name="checkmark-circle" size={20} color={Theme.brand.primary} />
+                    ) : (
+                      <Ionicons name="ellipse-outline" size={20} color={activeTheme.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </BlurView>
+      </Modal>
 
       {/* --- ADD GROUP/COMMUNITY MODAL --- */}
       <Modal visible={isAddModalVisible} animationType="slide" presentationStyle="overFullScreen" transparent>
@@ -302,9 +387,9 @@ function SettingsSection({ label, children, theme }: any) {
   );
 }
 
-function MenuRow({ icon, label, sub, right, theme }: any) {
+function MenuRow({ icon, label, sub, right, theme, onPress }: any) {
   return (
-    <View>
+    <TouchableOpacity disabled={!onPress} onPress={onPress}>
       <View style={styles.row}>
         <View style={[styles.iconBox, { backgroundColor: theme.background }]}>
           <Ionicons name={icon as any} size={18} color={theme.text} />
@@ -316,7 +401,7 @@ function MenuRow({ icon, label, sub, right, theme }: any) {
         {right ? right : <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />}
       </View>
       <View style={[styles.divider, { backgroundColor: theme.border, marginLeft: 50 }]} />
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -395,5 +480,32 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
   modalInput: { borderRadius: 18, padding: 18, fontSize: 16, marginTop: 10, borderWidth: 1, fontWeight: '600' },
   addModalBody: { padding: 24, borderRadius: 24, width: '80%' },
-  addOption: { paddingVertical: 12, paddingHorizontal: 16 }
+  addOption: { paddingVertical: 12, paddingHorizontal: 16 },
+  languageModalBody: {
+    borderWidth: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '75%',
+    marginHorizontal: -24,
+    paddingBottom: 12,
+  },
+  languageModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 10,
+  },
+  languageModalTitle: { fontSize: 22, fontWeight: '900', letterSpacing: -0.6 },
+  languageList: { paddingHorizontal: 12 },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(120,120,140,0.16)',
+  }
 });

@@ -1145,6 +1145,10 @@ section {
     margin-bottom: 25px;
 }
 
+#modalPayment {
+    display: none;
+}
+
 .modal-payment h3 {
     color: var(--primary);
     margin-bottom: 12px;

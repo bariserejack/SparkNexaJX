@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { getNotifications } from '../lib/notifications';
+import { getNotifications, notificationsSupportedInRuntime } from '../lib/notifications';
 
 import { Theme } from '../constants/Theme';
 import { useAppTheme } from '../lib/theme';
@@ -150,6 +150,9 @@ async function ensureNotificationPermission() {
     return false;
   }
   const Notifications = await getNotifications();
+  if (!Notifications) {
+    return false;
+  }
 
   // set handler once when notifications is loaded
   try {
@@ -196,6 +199,9 @@ async function scheduleReminderNotification(
     return null;
   }
   const Notifications = await getNotifications();
+  if (!Notifications) {
+    return null;
+  }
 
   const trigger =
     repeatType === 'daily'
@@ -304,7 +310,14 @@ export default function RemindersScreen() {
       const grantedNow = await ensureNotificationPermission();
       setPermissionGranted(grantedNow);
       if (!grantedNow) {
-        Alert.alert('Permission Needed', 'Notification permission is required to ring reminders.');
+        if (!notificationsSupportedInRuntime()) {
+          Alert.alert(
+            'Development Build Required',
+            'Expo Go on Android does not support this notifications flow. Press "s" in the Expo terminal and use a development build.'
+          );
+        } else {
+          Alert.alert('Permission Needed', 'Notification permission is required to ring reminders.');
+        }
         return;
       }
     }
@@ -349,7 +362,7 @@ export default function RemindersScreen() {
       if (notificationId) {
         try {
           const Notifications = await getNotifications();
-          await Notifications.cancelScheduledNotificationAsync(notificationId).catch(() => undefined);
+          await Notifications?.cancelScheduledNotificationAsync(notificationId).catch(() => undefined);
         } catch {
           // ignore
         }
@@ -368,7 +381,7 @@ export default function RemindersScreen() {
       const Notifications = await getNotifications();
       let notificationId = reminder.notification_id;
 
-      if (targetStatus === 'done' && notificationId) {
+      if (targetStatus === 'done' && notificationId && Notifications) {
         await Notifications.cancelScheduledNotificationAsync(notificationId).catch(() => undefined);
         notificationId = null;
       }
@@ -419,7 +432,7 @@ export default function RemindersScreen() {
             if (reminder.notification_id) {
               try {
                 const Notifications = await getNotifications();
-                await Notifications.cancelScheduledNotificationAsync(reminder.notification_id).catch(() => undefined);
+                await Notifications?.cancelScheduledNotificationAsync(reminder.notification_id).catch(() => undefined);
               } catch {
                 // ignore
               }

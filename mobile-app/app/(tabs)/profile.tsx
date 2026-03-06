@@ -134,9 +134,16 @@ export default function ProfileScreen() {
               <View style={styles.notePill}>
                 <Text style={styles.noteText}>Signal online</Text>
               </View>
-              <TouchableOpacity style={styles.coverEdit}>
-                <Ionicons name="create-outline" size={16} color="#FFFFFF" />
-              </TouchableOpacity>
+              <View style={styles.coverActions}>
+                <TouchableOpacity style={styles.coverEdit} onPress={() => router.push('/edit-profile')}>
+                  <Ionicons name="create-outline" size={16} color={activeTheme.text} />
+                  <View style={styles.coverIconAccent} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.coverMenu} onPress={() => router.push('/profile-settings')}>
+                  <Ionicons name="ellipsis-horizontal" size={16} color={activeTheme.text} />
+                  <View style={styles.coverIconAccent} />
+                </TouchableOpacity>
+              </View>
             </View>
           </LinearGradient>
 
@@ -146,7 +153,13 @@ export default function ProfileScreen() {
             style={[styles.identityCard, { backgroundColor: activeTheme.cardElevated, borderColor: activeTheme.border }]}
           >
             <View style={styles.identityHead}>
-              <AppLogo size={82} bordered />
+              <View style={styles.profileAvatarWrap}>
+                <AppLogo size={82} bordered />
+                <TouchableOpacity style={[styles.profileAvatarEdit, { borderColor: activeTheme.border, backgroundColor: activeTheme.card }]} onPress={() => router.push('/edit-profile')}>
+                  <Ionicons name="create-outline" size={14} color={activeTheme.text} />
+                  <View style={styles.coverIconAccent} />
+                </TouchableOpacity>
+              </View>
               <View style={styles.identityMeta}>
                 <Text style={[styles.identityName, { color: activeTheme.text }]}>{identityName}</Text>
                 <Text style={[styles.identityHandle, { color: activeTheme.textMuted }]}>{handle}</Text>
@@ -286,6 +299,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  coverActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   notePill: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 14,
@@ -298,12 +316,33 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   coverEdit: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  coverMenu: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  coverIconAccent: {
+    position: 'absolute',
+    right: 2,
+    top: 2,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: Theme.brand.primary,
   },
   identityCard: {
     marginTop: -36,
@@ -316,6 +355,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+  },
+  profileAvatarWrap: {
+    position: 'relative',
+    width: 82,
+    height: 82,
+  },
+  profileAvatarEdit: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   identityMeta: { flex: 1 },
   identityName: {

@@ -105,6 +105,38 @@ function RootDrawer() {
             drawerIcon: drawerIcon('settings-outline'),
           }}
         />
+        <Drawer.Screen
+          name="privacy"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="privacy-checkup"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="help"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="account"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="profile-settings"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="edit-profile"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="post-audience"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="storage-data"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
 
         <Drawer.Screen
           name="auth"

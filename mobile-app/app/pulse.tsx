@@ -7,6 +7,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -27,6 +28,8 @@ type ChatItem = {
   color: string;
 };
 
+type ChatCategory = 'all' | 'unread' | 'favorites' | 'groups';
+
 const NODE_INITIALS = ['JD', 'SM', 'AK', 'EP', 'LT'];
 const CHAT_ITEMS: ChatItem[] = [
   { name: 'Alex Rivera', msg: 'System protocols updated. 🚀', time: 'Now', unread: 1, color: Theme.brand.primary },
@@ -34,14 +37,41 @@ const CHAT_ITEMS: ChatItem[] = [
   { name: 'Dev Ops', msg: 'Server link established.', time: '2h', unread: 0, color: '#7367f0' },
 ];
 
+const EXTRA_CHAT_ITEMS: ChatItem[] = [
+  { name: 'Project Atlas', msg: 'Sprint review starts in 10 minutes.', time: '28m', unread: 3, color: '#FF9500' },
+];
+
+const CHAT_METADATA: Record<string, { favorite: boolean; group: boolean }> = {
+  'Alex Rivera': { favorite: true, group: false },
+  'Sarah Chen': { favorite: false, group: false },
+  'Dev Ops': { favorite: true, group: true },
+  'Project Atlas': { favorite: false, group: true },
+};
+
+const CHAT_CATEGORIES: Array<{ key: ChatCategory; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'favorites', label: 'Favorites' },
+  { key: 'groups', label: 'Groups' },
+];
+
+const CHAT_THEME_OPTIONS = ['Default', 'Ocean', 'Sunset', 'Mono'] as const;
+const CHAT_FONT_SIZE_OPTIONS = ['Small', 'Medium', 'Large'] as const;
+
 export default function ChatScreen() {
-  const { activeTheme } = useAppTheme();
+  const { activeTheme, themeMode, setThemeMode } = useAppTheme();
   const [selectedUser, setSelectedUser] = useState<{ name: string; color: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showGroupsModal, setShowGroupsModal] = useState(false);
   const [showChatSettingsModal, setShowChatSettingsModal] = useState(false);
   const [newFriend, setNewFriend] = useState('');
+  const [activeCategory, setActiveCategory] = useState<ChatCategory>('all');
+  const [defaultChatTheme, setDefaultChatTheme] = useState<(typeof CHAT_THEME_OPTIONS)[number]>('Default');
+  const [chatFontSize, setChatFontSize] = useState<(typeof CHAT_FONT_SIZE_OPTIONS)[number]>('Small');
+  const [enterIsSend, setEnterIsSend] = useState(false);
+  const [mediaVisibility, setMediaVisibility] = useState(false);
+  const [keepChatsArchived, setKeepChatsArchived] = useState(true);
 
   const q = searchQuery.trim().toLowerCase();
   const filteredNodes = useMemo(
@@ -49,9 +79,31 @@ export default function ChatScreen() {
     [q]
   );
   const filteredChats = useMemo(
-    () => (q ? CHAT_ITEMS.filter((c) => c.name.toLowerCase().includes(q) || c.msg.toLowerCase().includes(q)) : CHAT_ITEMS),
-    [q]
+    () =>
+      [...CHAT_ITEMS, ...EXTRA_CHAT_ITEMS].filter((c) => {
+        const matchesSearch = q ? c.name.toLowerCase().includes(q) || c.msg.toLowerCase().includes(q) : true;
+        const metadata = CHAT_METADATA[c.name] ?? { favorite: false, group: false };
+        const matchesCategory =
+          activeCategory === 'all' ||
+          (activeCategory === 'unread' && c.unread > 0) ||
+          (activeCategory === 'favorites' && metadata.favorite) ||
+          (activeCategory === 'groups' && metadata.group);
+        return matchesSearch && matchesCategory;
+      }),
+    [activeCategory, q]
   );
+
+  const cycleDefaultChatTheme = () => {
+    const currentIndex = CHAT_THEME_OPTIONS.indexOf(defaultChatTheme);
+    const nextIndex = (currentIndex + 1) % CHAT_THEME_OPTIONS.length;
+    setDefaultChatTheme(CHAT_THEME_OPTIONS[nextIndex]);
+  };
+
+  const cycleChatFontSize = () => {
+    const currentIndex = CHAT_FONT_SIZE_OPTIONS.indexOf(chatFontSize);
+    const nextIndex = (currentIndex + 1) % CHAT_FONT_SIZE_OPTIONS.length;
+    setChatFontSize(CHAT_FONT_SIZE_OPTIONS[nextIndex]);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
@@ -97,6 +149,28 @@ export default function ChatScreen() {
             onChangeText={setSearchQuery}
           />
         </BlurView>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryWrap}>
+          {CHAT_CATEGORIES.map((category) => {
+            const isActive = activeCategory === category.key;
+            return (
+              <TouchableOpacity
+                key={category.key}
+                style={[
+                  styles.categoryChip,
+                  {
+                    backgroundColor: isActive ? Theme.brand.primary : activeTheme.card,
+                    borderColor: isActive ? Theme.brand.primary : activeTheme.border,
+                  },
+                ]}
+                onPress={() => setActiveCategory(category.key)}
+              >
+                <Text style={[styles.categoryChipText, { color: isActive ? '#FFF' : activeTheme.textMuted }]}>
+                  {category.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -146,17 +220,68 @@ export default function ChatScreen() {
         <BlurView intensity={80} tint={activeTheme === Theme.dark ? 'dark' : 'light'} style={[styles.settingsModalContainer, { backgroundColor: activeTheme.background + 'CC' }]}>
           <View style={[styles.settingsModal, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
             <View style={styles.settingsModalHeader}>
-              <Text style={[styles.settingsModalTitle, { color: activeTheme.text }]}>Settings & Privacy</Text>
+              <Text style={[styles.settingsModalTitle, { color: activeTheme.text }]}>Chats</Text>
               <TouchableOpacity onPress={() => setShowChatSettingsModal(false)}>
                 <Ionicons name="close-outline" size={24} color={activeTheme.text} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <SettingsOption icon="archive-outline" label="Archived chats" theme={activeTheme} />
-              <SettingsOption icon="chatbubble-ellipses-outline" label="Message requests" theme={activeTheme} />
-              <SettingsOption icon="shield-checkmark-outline" label="Privacy" theme={activeTheme} />
-              <SettingsOption icon="chatbubbles-outline" label="Bubbles" theme={activeTheme} />
-              <SettingsOption icon="image-outline" label="Manage Media Storage" theme={activeTheme} />
+              <Text style={[styles.chatSectionTitle, { color: activeTheme.textMuted }]}>Display</Text>
+              <View style={[styles.chatSectionCard, { borderColor: activeTheme.border, backgroundColor: activeTheme.card }]}>
+                <ChatOptionAction
+                  icon="color-palette-outline"
+                  label="Theme"
+                  value={themeMode === 'dark' ? 'Dark' : 'Light'}
+                  onPress={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+                  theme={activeTheme}
+                />
+                <View style={[styles.chatOptionDivider, { backgroundColor: activeTheme.border }]} />
+                <ChatOptionAction
+                  icon="brush-outline"
+                  label="Default chat theme"
+                  value={defaultChatTheme}
+                  onPress={cycleDefaultChatTheme}
+                  theme={activeTheme}
+                />
+              </View>
+
+              <Text style={[styles.chatSectionTitle, { color: activeTheme.textMuted }]}>Chat settings</Text>
+              <View style={[styles.chatSectionCard, { borderColor: activeTheme.border, backgroundColor: activeTheme.card }]}>
+                <ChatOptionToggle
+                  label="Enter is send"
+                  description="Enter key will send your message"
+                  value={enterIsSend}
+                  onValueChange={setEnterIsSend}
+                  theme={activeTheme}
+                />
+                <View style={[styles.chatOptionDivider, { backgroundColor: activeTheme.border }]} />
+                <ChatOptionToggle
+                  label="Media visibility"
+                  description="Show newly downloaded media in your device's gallery"
+                  value={mediaVisibility}
+                  onValueChange={setMediaVisibility}
+                  theme={activeTheme}
+                />
+                <View style={[styles.chatOptionDivider, { backgroundColor: activeTheme.border }]} />
+                <ChatOptionAction label="Font size" value={chatFontSize} onPress={cycleChatFontSize} theme={activeTheme} />
+              </View>
+
+              <Text style={[styles.chatSectionTitle, { color: activeTheme.textMuted }]}>Archived chats</Text>
+              <View style={[styles.chatSectionCard, { borderColor: activeTheme.border, backgroundColor: activeTheme.card }]}>
+                <ChatOptionToggle
+                  label="Keep chats archived"
+                  description="Archived chats will remain archived when you receive a new message"
+                  value={keepChatsArchived}
+                  onValueChange={setKeepChatsArchived}
+                  theme={activeTheme}
+                />
+              </View>
+
+              <View style={[styles.chatSectionCard, { borderColor: activeTheme.border, backgroundColor: activeTheme.card }]}>
+                <ChatOptionAction icon="cloud-upload-outline" label="Chat backup" theme={activeTheme} />
+                <View style={[styles.chatOptionDivider, { backgroundColor: activeTheme.border }]} />
+                <ChatOptionAction icon="time-outline" label="Chat history" theme={activeTheme} />
+              </View>
             </ScrollView>
           </View>
         </BlurView>
@@ -334,6 +459,44 @@ function ChatBubble({ message, isMe, theme, status }: any) {
   );
 }
 
+function ChatOptionAction({ icon, label, value, onPress, theme }: any) {
+  return (
+    <TouchableOpacity style={styles.chatOptionRow} onPress={onPress} disabled={!onPress}>
+      <View style={styles.chatOptionMain}>
+        {icon ? (
+          <View style={[styles.chatOptionIcon, { backgroundColor: theme.background }]}>
+            <Ionicons name={icon as any} size={18} color={theme.text} />
+          </View>
+        ) : null}
+        <View style={styles.chatOptionTextWrap}>
+          <Text style={[styles.chatOptionLabel, { color: theme.text }]}>{label}</Text>
+          {value ? <Text style={[styles.chatOptionSub, { color: theme.textMuted }]}>{value}</Text> : null}
+        </View>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+    </TouchableOpacity>
+  );
+}
+
+function ChatOptionToggle({ label, description, value, onValueChange, theme }: any) {
+  return (
+    <View style={styles.chatOptionRow}>
+      <View style={styles.chatOptionMain}>
+        <View style={styles.chatOptionTextWrap}>
+          <Text style={[styles.chatOptionLabel, { color: theme.text }]}>{label}</Text>
+          <Text style={[styles.chatOptionSub, { color: theme.textMuted }]}>{description}</Text>
+        </View>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: theme.border, true: Theme.brand.primary }}
+        thumbColor="#FFFFFF"
+      />
+    </View>
+  );
+}
+
 function SettingsOption({ icon, label, theme }: any) {
   return (
     <TouchableOpacity style={styles.settingsOption}>
@@ -400,6 +563,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  categoryWrap: { paddingTop: 12, paddingBottom: 4, gap: 10 },
+  categoryChip: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  categoryChipText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase' },
   headerSubtitle: { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 4 },
   headerTitle: { fontSize: 34, fontWeight: '900', letterSpacing: -1 },
   iconCircle: { width: 48, height: 48, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
@@ -452,9 +623,19 @@ const styles = StyleSheet.create({
   settingsModal: { width: '100%', borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, maxHeight: '80%', paddingBottom: 40 },
   settingsModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
   settingsModalTitle: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
+  chatSectionTitle: { fontSize: 13, fontWeight: '800', marginHorizontal: 20, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.8 },
+  chatSectionCard: { marginHorizontal: 16, borderWidth: 1, borderRadius: 18, overflow: 'hidden' },
+  chatOptionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
+  chatOptionMain: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 12 },
+  chatOptionIcon: { width: 34, height: 34, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  chatOptionTextWrap: { flex: 1 },
+  chatOptionLabel: { fontSize: 16, fontWeight: '700' },
+  chatOptionSub: { fontSize: 13, fontWeight: '500', marginTop: 3, lineHeight: 18 },
+  chatOptionDivider: { height: 1, marginLeft: 16 },
   settingsOption: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(200,200,200,0.1)' },
   optionIconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   optionLabel: { flex: 1, fontSize: 16, fontWeight: '600' },
   dividerSection: { height: 1, marginVertical: 8 },
   fab: { position: 'absolute', bottom: 20, right: 20, width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65, elevation: 8 },
 });
+
