@@ -1,3 +1,4 @@
+import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
 import { Theme } from '../constants/Theme';
@@ -10,7 +11,15 @@ function drawerIcon(name: keyof typeof Ionicons.glyphMap) {
 }
 
 function RootDrawer() {
-  const { activeTheme, themeMode } = useAppTheme();
+  const { activeTheme, themeMode, isReady } = useAppTheme();
+
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Theme.light.background }}>
+        <ActivityIndicator size="large" color={Theme.brand.primary} />
+      </View>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

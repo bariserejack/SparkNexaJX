@@ -101,6 +101,7 @@ export default function HomeScreen() {
   const [selectedAudience, setSelectedAudience] = useState('public');
   const [selectedProtocolId, setSelectedProtocolId] = useState(POST_PROTOCOLS[0].id);
   const [selectedPostTools, setSelectedPostTools] = useState<string[]>([]);
+  const [composerPostText, setComposerPostText] = useState('');
 
   const composerQuery = composerSearchQuery.trim().toLowerCase();
   const filteredProtocols = useMemo(
@@ -207,6 +208,7 @@ export default function HomeScreen() {
     setComposerStep('audience');
     setComposerSearchQuery('');
     setSelectedPostTools([]);
+    setComposerPostText('');
   };
 
   const openSideMenu = () => {
@@ -492,6 +494,22 @@ export default function HomeScreen() {
                       })}
                     </View>
 
+                    <Text style={[styles.menuSectionTitle, { color: activeTheme.textMuted }]}>Write your post</Text>
+                    <View style={[styles.postDraftCard, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
+                      <Text style={[styles.postDraftHint, { color: activeTheme.textMuted }]}>
+                        {`Share your ${selectedProtocol.name.toLowerCase()} update before publishing.`}
+                      </Text>
+                      <TextInput
+                        style={[styles.postDraftInput, { color: activeTheme.text }]}
+                        placeholder={`What do you want to post in ${selectedProtocol.name}?`}
+                        placeholderTextColor={activeTheme.textMuted}
+                        multiline
+                        textAlignVertical="top"
+                        value={composerPostText}
+                        onChangeText={setComposerPostText}
+                      />
+                    </View>
+
                     <Text style={[styles.menuSectionTitle, { color: activeTheme.textMuted }]}>Add to post</Text>
                     <View style={[styles.toolsCard, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
                       {filteredPostTools.length === 0 ? (
@@ -535,6 +553,14 @@ export default function HomeScreen() {
                         <Ionicons name="apps-outline" size={16} color={Theme.brand.primary} />
                         <Text style={[styles.publishLabel, { color: activeTheme.textMuted }]}>Category</Text>
                         <Text style={[styles.publishValue, { color: activeTheme.text }]}>{selectedProtocol.name}</Text>
+                      </View>
+                      <View style={[styles.audienceDivider, { backgroundColor: activeTheme.border, marginLeft: 0 }]} />
+                      <View style={styles.publishPostColumn}>
+                        <Ionicons name="create-outline" size={16} color={Theme.brand.primary} />
+                        <Text style={[styles.publishLabel, { color: activeTheme.textMuted }]}>Post</Text>
+                        <Text style={[styles.publishPostValue, { color: activeTheme.text }]}>
+                          {composerPostText.trim().length > 0 ? composerPostText : 'No post message added yet'}
+                        </Text>
                       </View>
                       <View style={[styles.audienceDivider, { backgroundColor: activeTheme.border, marginLeft: 0 }]} />
                       <View style={styles.publishRowColumn}>
@@ -735,6 +761,9 @@ const styles = StyleSheet.create({
   catCard: { width: (width - 80) / 2, padding: 20, borderRadius: 24, marginBottom: 20, alignItems: 'center', borderWidth: 1 },
   catIconBox: { width: 48, height: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
   catLabel: { fontSize: 13, fontWeight: '800' },
+  postDraftCard: { borderWidth: 1, borderRadius: 18, padding: 14, marginBottom: 16, gap: 10 },
+  postDraftHint: { fontSize: 12, fontWeight: '600' },
+  postDraftInput: { minHeight: 110, fontSize: 14, fontWeight: '600', lineHeight: 21 },
   toolsCard: { borderWidth: 1, borderRadius: 18, overflow: 'hidden', marginTop: 2 },
   toolRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   toolIconBox: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -742,9 +771,11 @@ const styles = StyleSheet.create({
   emptyMenuText: { paddingHorizontal: 14, paddingVertical: 14, fontSize: 13, fontWeight: '500' },
   publishCard: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 12 },
   publishRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, gap: 8 },
+  publishPostColumn: { paddingVertical: 10, gap: 6 },
   publishRowColumn: { paddingVertical: 10, gap: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 8 },
   publishLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   publishValue: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  publishPostValue: { fontSize: 14, fontWeight: '600', lineHeight: 21 },
   menuFooter: { flexDirection: 'row', gap: 10, marginTop: 14 },
   menuSecondaryBtn: {
     flex: 1,
