@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
   ActivityIndicator, RefreshControl,
@@ -31,11 +31,11 @@ const POST_PROTOCOLS = [
 ];
 
 const AUDIENCE_OPTIONS = [
-  { id: 'public', label: 'Public', sub: 'Anyone on or off SparkNexa', icon: 'earth-outline' },
-  { id: 'friends', label: 'Friends', sub: 'Your friends on SparkNexa', icon: 'people-outline' },
-  { id: 'friends_except', label: 'Friends except...', sub: "Don't show to some friends", icon: 'person-remove-outline' },
-  { id: 'specific_friends', label: 'Specific friends', sub: 'Only show to some friends', icon: 'person-add-outline' },
-  { id: 'only_me', label: 'Only me', sub: 'Only me', icon: 'lock-closed-outline' },
+  { id: 'public', label: 'Public', icon: 'earth-outline' },
+  { id: 'friends', label: 'Friends', icon: 'people-outline' },
+  { id: 'friends_except', label: 'Friends except...', icon: 'person-remove-outline' },
+  { id: 'specific_friends', label: 'Specific friends', icon: 'person-add-outline' },
+  { id: 'only_me', label: 'Only me', icon: 'lock-closed-outline' },
 ];
 
 const POST_TOOLS = [
@@ -52,11 +52,12 @@ const POST_TOOLS = [
   { id: 'call', label: 'Get Calls', icon: 'call-outline' },
 ];
 
-type ComposerStep = 'audience' | 'category' | 'publish';
+type ComposerStep = 'audience' | 'category' | 'compose' | 'publish';
 
 const COMPOSER_STEPS: Array<{ key: ComposerStep; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: 'audience', label: 'Audience', icon: 'people-outline' },
   { key: 'category', label: 'Category', icon: 'apps-outline' },
+  { key: 'compose', label: 'Write', icon: 'create-outline' },
   { key: 'publish', label: 'Publish', icon: 'rocket-outline' },
 ];
 
@@ -90,7 +91,6 @@ function TransmissionCard({ user, content, time, theme, isDark }: any) {
 export default function HomeScreen() {
   const { activeTheme, isDark } = useAppTheme();
   const navigation = useNavigation(); 
-  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [profileName, setProfileName] = useState("");
@@ -102,6 +102,18 @@ export default function HomeScreen() {
   const [selectedProtocolId, setSelectedProtocolId] = useState(POST_PROTOCOLS[0].id);
   const [selectedPostTools, setSelectedPostTools] = useState<string[]>([]);
   const [composerPostText, setComposerPostText] = useState('');
+
+  const openSideMenu = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const parent = (navigation as any).getParent?.();
+    if (parent?.openDrawer) {
+      parent.openDrawer();
+      return;
+    }
+    if ((navigation as any).openDrawer) {
+      (navigation as any).openDrawer();
+    }
+  }, [navigation]);
 
   const composerQuery = composerSearchQuery.trim().toLowerCase();
   const filteredProtocols = useMemo(
@@ -123,7 +135,7 @@ export default function HomeScreen() {
       composerQuery
         ? AUDIENCE_OPTIONS.filter(
             (item) =>
-              item.label.toLowerCase().includes(composerQuery) || item.sub.toLowerCase().includes(composerQuery)
+              item.label.toLowerCase().includes(composerQuery)
           )
         : AUDIENCE_OPTIONS,
     [composerQuery]
@@ -148,6 +160,8 @@ export default function HomeScreen() {
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -183,14 +197,16 @@ export default function HomeScreen() {
   const goToNextComposerStep = () => {
     setComposerStep((prev) => {
       if (prev === 'audience') return 'category';
-      if (prev === 'category') return 'publish';
+      if (prev === 'category') return 'compose';
+      if (prev === 'compose') return 'publish';
       return 'publish';
     });
   };
 
   const goToPrevComposerStep = () => {
     setComposerStep((prev) => {
-      if (prev === 'publish') return 'category';
+      if (prev === 'publish') return 'compose';
+      if (prev === 'compose') return 'category';
       if (prev === 'category') return 'audience';
       return 'audience';
     });
@@ -211,17 +227,6 @@ export default function HomeScreen() {
     setComposerPostText('');
   };
 
-  const openSideMenu = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const parent = (navigation as any).getParent?.();
-    if (parent?.openDrawer) {
-      parent.openDrawer();
-      return;
-    }
-    if ((navigation as any).openDrawer) {
-      (navigation as any).openDrawer();
-    }
-  };
 
   if (loading) {
     return (
@@ -238,15 +243,32 @@ export default function HomeScreen() {
 
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <View style={styles.navBar}>
-          <TouchableOpacity onPress={openSideMenu} style={styles.menuTrigger}>
-            <BlurView intensity={40} tint={isDark ? "dark" : "light"} style={[styles.iconInner, { backgroundColor: activeTheme.glass }]}>
-              <Ionicons name="reorder-three-outline" size={16} color={activeTheme.text} />
-            </BlurView>
-          </TouchableOpacity>
+          <View style={styles.brandGroup}>
+            <TouchableOpacity onPress={openSideMenu} style={styles.menuTrigger}>
+              <BlurView intensity={40} tint={isDark ? "dark" : "light"} style={[styles.iconInner, { backgroundColor: activeTheme.glass }]}>
+                <Ionicons name="reorder-three-outline" size={16} color={activeTheme.text} />
+              </BlurView>
+            </TouchableOpacity>
 
-          <View style={styles.centerHeader}>
-            <Text style={styles.welcomeText}>SPARKNEXA HOME</Text>
-            <Text style={[styles.userName, { color: activeTheme.text }]} numberOfLines={1}>{profileName}</Text>
+            <View style={styles.brandMark}>
+              <View style={styles.brandTextWrap}>
+                <View style={styles.brandWordmark}>
+                  <Text
+                    allowFontScaling={false}
+                    maxFontSizeMultiplier={1}
+                    style={[styles.brandWordmarkText, { color: activeTheme.text }]}
+                  >
+                    SparkNexaJX
+                  </Text>
+                </View>
+                <LinearGradient
+                  colors={Theme.brand.primaryGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.brandUnderline}
+                />
+              </View>
+            </View>
           </View>
 
           <View style={styles.navActions}>
@@ -379,14 +401,13 @@ export default function HomeScreen() {
                   </View>
                   <View>
                     <Text style={[styles.menuTitle, { color: activeTheme.text }]}>
-                      {composerStep === 'audience' ? 'Choose Audience' : composerStep === 'category' ? 'Select Category' : 'Publish Post'}
-                    </Text>
-                    <Text style={[styles.menuSubtitle, { color: activeTheme.textMuted }]}>
                       {composerStep === 'audience'
-                        ? 'Step 1 of 3'
+                        ? 'Choose Audience'
                         : composerStep === 'category'
-                          ? 'Step 2 of 3'
-                          : 'Step 3 of 3'}
+                          ? 'Select Category'
+                          : composerStep === 'compose'
+                            ? 'Write Your Post'
+                            : 'Publish Post'}
                     </Text>
                   </View>
                 </View>
@@ -422,7 +443,13 @@ export default function HomeScreen() {
                   <Ionicons name="search-outline" size={16} color={activeTheme.textMuted} />
                   <TextInput
                     style={[styles.menuSearchInput, { color: activeTheme.text }]}
-                    placeholder={composerStep === 'audience' ? 'Search audience...' : 'Search categories and tools...'}
+                    placeholder={
+                      composerStep === 'audience'
+                        ? 'Search audience...'
+                        : composerStep === 'category'
+                          ? 'Search categories...'
+                          : 'Search post tools...'
+                    }
                     placeholderTextColor={activeTheme.textMuted}
                     value={composerSearchQuery}
                     onChangeText={setComposerSearchQuery}
@@ -447,7 +474,6 @@ export default function HomeScreen() {
                               </View>
                               <View style={styles.audienceTextWrap}>
                                 <Text style={[styles.audienceLabel, { color: activeTheme.text }]}>{item.label}</Text>
-                                <Text style={[styles.audienceSub, { color: activeTheme.textMuted }]}>{item.sub}</Text>
                               </View>
                               <Ionicons
                                 name={selected ? 'radio-button-on' : 'radio-button-off'}
@@ -493,7 +519,11 @@ export default function HomeScreen() {
                         );
                       })}
                     </View>
+                  </>
+                ) : null}
 
+                {composerStep === 'compose' ? (
+                  <>
                     <Text style={[styles.menuSectionTitle, { color: activeTheme.textMuted }]}>Write your post</Text>
                     <View style={[styles.postDraftCard, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
                       <Text style={[styles.postDraftHint, { color: activeTheme.textMuted }]}>
@@ -608,9 +638,16 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 20, paddingHorizontal: 20 },
   navBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 15 },
   menuTrigger: { borderRadius: 18, overflow: 'hidden' },
-  centerHeader: { alignItems: 'center' },
-  welcomeText: { color: Theme.brand.primary, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 2 },
-  userName: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
+  brandGroup: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  brandMark: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  brandTextWrap: { justifyContent: 'center', flexShrink: 1 },
+  brandWordmark: { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
+  brandWordmarkText: {
+    fontSize: 21,
+    fontFamily: 'Roboto_700Bold',
+    letterSpacing: 0.4,
+  },
+  brandUnderline: { height: 3, width: 72, borderRadius: 999, marginTop: 2 },
   navActions: { flexDirection: 'row', gap: 10 },
   iconInner: { padding: 12 },
   glassIcon: { borderRadius: 18, overflow: 'hidden' },
@@ -718,7 +755,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuTitle: { fontSize: 24, fontWeight: '900' },
-  menuSubtitle: { marginTop: 2, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.7 },
   stepIndicatorRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   stepPill: {
     borderWidth: 1,
@@ -755,7 +791,6 @@ const styles = StyleSheet.create({
   audienceIconBox: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   audienceTextWrap: { flex: 1 },
   audienceLabel: { fontSize: 15, fontWeight: '700' },
-  audienceSub: { fontSize: 12, fontWeight: '500', marginTop: 2 },
   audienceDivider: { height: 1, marginLeft: 56 },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   catCard: { width: (width - 80) / 2, padding: 20, borderRadius: 24, marginBottom: 20, alignItems: 'center', borderWidth: 1 },
