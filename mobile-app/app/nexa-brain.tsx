@@ -100,7 +100,7 @@ export default function NexaBrainScreen() {
     const text = qaInput.trim();
     if (!text) return;
     const id = `${Date.now()}`;
-    const nextMessages = [...qaMessages, { id: `u-${id}`, role: 'user', text }];
+    const nextMessages: QaMessage[] = [...qaMessages, { id: `u-${id}`, role: 'user', text }];
     setQaMessages(nextMessages);
     setQaInput('');
     setQaLoading(true);

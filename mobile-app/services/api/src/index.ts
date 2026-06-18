@@ -1,4 +1,21 @@
 import express from 'express';
+import dotenv from 'dotenv';
+import bookingsRouter from './routes/bookings';
+import walletsRouter from './routes/wallets';
+
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+
+app.use('/bookings', bookingsRouter);
+app.use('/wallets', walletsRouter);
+
+app.get('/', (req, res) => res.json({ ok: true, name: 'sparknexajx-api' }));
+
+const port = process.env.PORT || 4000;
+app.listen(port, () => console.log(`API listening on ${port}`));
+import express from 'express';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import { config } from './config.js';

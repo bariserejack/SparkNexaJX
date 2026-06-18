@@ -272,11 +272,11 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.navActions}>
-            <TouchableOpacity style={styles.glassIcon} onPress={() => router.push('/pulse')}>
-               <BlurView intensity={40} tint={isDark ? "dark" : "light"} style={[styles.iconInner, { backgroundColor: activeTheme.glass }]}>
-                 <Ionicons name="chatbubbles-outline" size={16} color={Theme.brand.primary} />
-               </BlurView>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.glassIcon} onPress={() => router.push('/pulse')}>
+                 <BlurView intensity={40} tint={isDark ? "dark" : "light"} style={[styles.iconInner, { backgroundColor: activeTheme.glass }]}>
+                   <Ionicons name="chatbubbles-outline" size={16} color={Theme.brand.primary} />
+                 </BlurView>
+              </TouchableOpacity>
           </View>
         </View>
 

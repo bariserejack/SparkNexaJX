@@ -83,9 +83,28 @@ function RootDrawer() {
         <Drawer.Screen
           name="vault"
           options={{
-            drawerLabel: 'Secure Vault',
-            drawerIcon: drawerIcon('shield-checkmark-outline'),
+            drawerLabel: 'SafeKeep',
+            drawerIcon: drawerIcon('file-tray-full-outline'),
           }}
+        />
+        <Drawer.Screen
+          name="secure-vault"
+          options={{
+            drawerLabel: 'Secure Vault',
+            drawerIcon: drawerIcon('wallet-outline'),
+          }}
+        />
+        <Drawer.Screen
+          name="marketplace/index"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="marketplace/new"
+          options={{ drawerItemStyle: { display: 'none' } }}
+        />
+        <Drawer.Screen
+          name="marketplace/[id]"
+          options={{ drawerItemStyle: { display: 'none' } }}
         />
         <Drawer.Screen
           name="analytics"

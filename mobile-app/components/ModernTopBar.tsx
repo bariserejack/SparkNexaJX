@@ -40,12 +40,30 @@ export function ModernTopBar({ currentRoute }: { currentRoute: string }) {
     >
       <View style={styles.titleRow}>
         <Text style={[styles.title, { color: activeTheme.text }]}>{TITLES[route]}</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/notifications')}
-          style={[styles.actionButton, { borderColor: activeTheme.border, backgroundColor: activeTheme.cardElevated }]}
-        >
-          <Ionicons name="notifications-outline" size={16} color={activeTheme.text} />
-        </TouchableOpacity>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            onPress={() => router.push('/marketplace')}
+            style={[styles.actionButton, { borderColor: activeTheme.border, backgroundColor: activeTheme.cardElevated }]}
+            accessibilityLabel="Open NexaMarket"
+          >
+            <Ionicons name="cart-outline" size={16} color={activeTheme.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/secure-vault')}
+            style={[styles.actionButton, { borderColor: activeTheme.border, backgroundColor: activeTheme.cardElevated, marginLeft: 8 }]}
+            accessibilityLabel="Open Secure Vault"
+          >
+            <Ionicons name="wallet-outline" size={16} color={activeTheme.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => router.push('/notifications')}
+            style={[styles.actionButton, { borderColor: activeTheme.border, backgroundColor: activeTheme.cardElevated, marginLeft: 8 }]}
+          >
+            <Ionicons name="notifications-outline" size={16} color={activeTheme.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.tabShortcutRow}>
@@ -100,6 +118,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   tabShortcutRow: {
     marginTop: 10,

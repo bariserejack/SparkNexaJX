@@ -108,11 +108,11 @@ export default function VaultScreen() {
               <Ionicons name="chevron-back" size={16} color={activeTheme.text} />
             </TouchableOpacity>
             <View>
-              <Text style={[styles.headerTitle, { color: activeTheme.text }]}>Vault</Text>
+              <Text style={[styles.headerTitle, { color: activeTheme.text }]}>SafeKeep</Text>
             </View>
           </View>
           <TouchableOpacity style={[styles.infoCircle, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
-            <Ionicons name="shield-checkmark" size={16} color={Theme.brand.primary} />
+            <Ionicons name="file-tray-full" size={16} color={Theme.brand.primary} />
           </TouchableOpacity>
         </View>
 
