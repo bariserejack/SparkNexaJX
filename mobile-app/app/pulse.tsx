@@ -1393,7 +1393,7 @@ function NewChatView({
   ];
 
   const normalizedQuery = query.trim().toLowerCase();
-  const filterList = (list: Array<{ name: string }>) =>
+  const filterList = <T extends { name: string }>(list: T[]) =>
     normalizedQuery ? list.filter((item) => item.name.toLowerCase().includes(normalizedQuery)) : list;
 
   const filteredFrequent = filterList(frequentContacts);

@@ -27,8 +27,13 @@ const CONTENT_GATING_OPTIONS = ['All content', 'Basic free / Premium paid'] as c
 const THEME_SWATCHES = ['#6d6af3', '#28c76f', '#f59e0b', '#ec4899', '#22d3ee', '#a855f7'] as const;
 
 type ToggleState = Record<string, boolean>;
+type ToggleRowConfig = {
+  key: string;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+};
 
-const FEATURE_ROWS = [
+const FEATURE_ROWS: ToggleRowConfig[] = [
   { key: 'chat', label: 'Chat', icon: 'chatbubble-ellipses-outline' },
   { key: 'voice', label: 'Voice channels', icon: 'mic-outline' },
   { key: 'video', label: 'Video rooms', icon: 'videocam-outline' },
@@ -42,7 +47,7 @@ const FEATURE_ROWS = [
   { key: 'polls', label: 'Polls & voting', icon: 'stats-chart-outline' },
 ];
 
-const AI_ROWS = [
+const AI_ROWS: ToggleRowConfig[] = [
   { key: 'aiAssistant', label: 'AI study assistant', icon: 'sparkles-outline' },
   { key: 'summaries', label: 'Smart summaries', icon: 'document-text-outline' },
   { key: 'moderation', label: 'Auto-moderation', icon: 'shield-checkmark-outline' },
@@ -133,7 +138,7 @@ export default function CollectiveBuilder({ variant }: { variant: CollectiveVari
     router.replace('/pulse');
   };
 
-  const toggleFromList = (current: string[], value: string) => {
+  const toggleFromList = (value: string) => {
     setLearningGoals((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
   };
 
