@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, Platform } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, Platform, Pressable } from 'react-native';
 import { Theme } from '../constants/Theme';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,12 +8,17 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { AppLogo } from '../components/AppLogo';
 import Animated, { 
-  FadeIn, 
   FadeInDown, 
   FadeInUp, 
+  Easing,
+  Extrapolation,
+  type SharedValue,
   useAnimatedStyle, 
+  useAnimatedScrollHandler,
   interpolate,
-  useSharedValue
+  useSharedValue,
+  withRepeat,
+  withTiming
 } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
@@ -42,11 +47,104 @@ const SLIDES = [
   },
 ];
 
+function PaginationDot({ index, scrollX, activeColor }: { index: number; scrollX: SharedValue<number>; activeColor: string }) {
+  const animatedDotStyle = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    const dotWidth = interpolate(scrollX.value, inputRange, [8, 28, 8], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollX.value, inputRange, [0.25, 1, 0.25], Extrapolation.CLAMP);
+    return { width: dotWidth, opacity };
+  });
+
+  return <Animated.View style={[styles.dot, { backgroundColor: activeColor }, animatedDotStyle]} />;
+}
+
+function OnboardingSlide({ item, index, scrollX }: { item: typeof SLIDES[0]; index: number; scrollX: SharedValue<number> }) {
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+  }, [pulse]);
+
+  const slideMotion = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    return {
+      opacity: interpolate(scrollX.value, inputRange, [0.25, 1, 0.25], Extrapolation.CLAMP),
+      transform: [
+        { translateY: interpolate(scrollX.value, inputRange, [26, 0, 26], Extrapolation.CLAMP) },
+        { scale: interpolate(scrollX.value, inputRange, [0.9, 1, 0.9], Extrapolation.CLAMP) },
+      ],
+    };
+  });
+
+  const iconMotion = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    return {
+      transform: [
+        { translateX: interpolate(scrollX.value, inputRange, [70, 0, -70], Extrapolation.CLAMP) },
+        { rotate: `${interpolate(scrollX.value, inputRange, [-10, 0, 10], Extrapolation.CLAMP)}deg` },
+      ],
+    };
+  });
+
+  const glowMotion = useAnimatedStyle(() => ({
+    opacity: interpolate(pulse.value, [0, 1], [0.18, 0.42]),
+    transform: [{ scale: interpolate(pulse.value, [0, 1], [0.92, 1.22]) }],
+  }));
+
+  const textMotion = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    return {
+      transform: [
+        { translateX: interpolate(scrollX.value, inputRange, [34, 0, -34], Extrapolation.CLAMP) },
+      ],
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.slide, slideMotion]}>
+      <Animated.View entering={FadeInUp.delay(180).duration(700)}>
+        <Animated.View style={[styles.iconContainer, iconMotion]}>
+          <BlurView intensity={20} tint="light" style={styles.iconGlass}>
+            <LinearGradient
+              colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.01)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <Ionicons name={item.icon as any} size={46} color={item.color} />
+          </BlurView>
+          <Animated.View style={[styles.iconGlow, { backgroundColor: item.color }, glowMotion]} />
+        </Animated.View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(300).duration(700)}>
+        <Animated.View style={[styles.textContainer, textMotion]}>
+          <Text style={styles.slideTitle}>{item.title}</Text>
+          <Text style={styles.slideDesc}>{item.desc}</Text>
+        </Animated.View>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 export default function Onboarding() {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollX = useSharedValue(0);
+  const buttonScale = useSharedValue(1);
   const flatListRef = useRef<FlatList>(null);
   const brand = Theme.brand;
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
+
+  const ctaMotion = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+  }));
 
   const handleNext = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -57,27 +155,17 @@ export default function Onboarding() {
     }
   };
 
-  const renderItem = ({ item }: { item: typeof SLIDES[0] }) => {
-    return (
-      <View style={styles.slide}>
-        <Animated.View entering={FadeInUp.delay(200).duration(800)} style={styles.iconContainer}>
-          <BlurView intensity={20} tint="light" style={styles.iconGlass}>
-            <LinearGradient
-              colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.01)']}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name={item.icon as any} size={16} color={item.color} />
-          </BlurView>
-          <View style={[styles.iconGlow, { backgroundColor: item.color }]} />
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(400).duration(800)} style={styles.textContainer}>
-          <Text style={styles.slideTitle}>{item.title}</Text>
-          <Text style={styles.slideDesc}>{item.desc}</Text>
-        </Animated.View>
-      </View>
-    );
+  const handlePressIn = () => {
+    buttonScale.value = withTiming(0.96, { duration: 120, easing: Easing.out(Easing.quad) });
   };
+
+  const handlePressOut = () => {
+    buttonScale.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.back(1.4)) });
+  };
+
+  const renderItem = ({ item, index }: { item: typeof SLIDES[0]; index: number }) => (
+    <OnboardingSlide item={item} index={index} scrollX={scrollX} />
+  );
 
   return (
     <View style={styles.container}>
@@ -96,15 +184,13 @@ export default function Onboarding() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
+      <Animated.FlatList
         ref={flatListRef}
         data={SLIDES}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={(e) => {
-          scrollX.value = e.nativeEvent.contentOffset.x;
-        }}
+        onScroll={scrollHandler}
         scrollEventThrottle={16}
         onMomentumScrollEnd={(e) => setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
         renderItem={renderItem}
@@ -115,23 +201,19 @@ export default function Onboarding() {
         {/* Pagination Dots */}
         <View style={styles.indicatorRow}>
           {SLIDES.map((_, i) => {
-            const animatedDotStyle = useAnimatedStyle(() => {
-              const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
-              const dotWidth = interpolate(scrollX.value, inputRange, [8, 28, 8], 'clamp');
-              const opacity = interpolate(scrollX.value, inputRange, [0.2, 1, 0.2], 'clamp');
-              return { width: dotWidth, opacity };
-            });
-
             return (
-              <Animated.View 
-                key={i} 
-                style={[styles.dot, animatedDotStyle, activeIndex === i && { backgroundColor: brand.primary }]} 
+              <PaginationDot
+                key={i}
+                index={i}
+                scrollX={scrollX}
+                activeColor={activeIndex === i ? brand.primary : 'rgba(255,255,255,0.15)'}
               />
             );
           })}
         </View>
 
-        <TouchableOpacity activeOpacity={0.9} onPress={handleNext} style={styles.ctaWrapper}>
+        <Pressable onPress={handleNext} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+          <Animated.View style={[styles.ctaWrapper, ctaMotion]}>
           <LinearGradient
             colors={[brand.primary, '#ce9ffc']}
             start={{ x: 0, y: 0 }}
@@ -143,7 +225,8 @@ export default function Onboarding() {
             </Text>
             <Ionicons name="chevron-forward" size={16} color="#FFF" />
           </LinearGradient>
-        </TouchableOpacity>
+          </Animated.View>
+        </Pressable>
         
         <Text style={styles.progressText}>LINK STATUS: {activeIndex + 1} / {SLIDES.length}</Text>
       </View>

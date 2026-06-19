@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,6 +22,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { Theme } from '../../constants/Theme';
 import { supabase } from '../../lib/supabase';
@@ -43,6 +52,11 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const ctaScale = useSharedValue(1);
+
+  const ctaMotion = useAnimatedStyle(() => ({
+    transform: [{ scale: ctaScale.value }],
+  }));
 
   // extensible list of providers, color mapping for branding
   const oauthProviders: Array<{ key: 'google' | 'apple' | 'github'; label: string; icon: string; color: string }> = [
@@ -122,6 +136,14 @@ export default function LoginScreen() {
     router.replace('/(tabs)');
   }
 
+  function handlePressIn() {
+    ctaScale.value = withTiming(0.97, { duration: 100, easing: Easing.out(Easing.quad) });
+  }
+
+  function handlePressOut() {
+    ctaScale.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.back(1.3)) });
+  }
+
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -133,17 +155,18 @@ export default function LoginScreen() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.brandWrap}>
+          <Animated.View entering={FadeInUp.duration(650).springify()} style={styles.brandWrap}>
             <View style={styles.brandRow}>
               <AppLogo size={74} />
               <Text style={styles.appName}>SparkNexaJX</Text>
             </View>
             <Text style={styles.title}>Welcome Back</Text>
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputWrap}>
+          <Animated.View entering={FadeInDown.delay(120).duration(650).springify()} style={styles.card}>
+            <Animated.View entering={FadeInDown.delay(220).duration(520)}>
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputWrap}>
               <Ionicons name="mail-outline" size={16} color={palette.textMuted} />
               <TextInput
                 style={styles.input}
@@ -154,10 +177,12 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
               />
-            </View>
+              </View>
+            </Animated.View>
 
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrap}>
+            <Animated.View entering={FadeInDown.delay(300).duration(520)}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputWrap}>
               <Ionicons name="lock-closed-outline" size={16} color={palette.textMuted} />
               <TextInput
                 style={styles.input}
@@ -170,26 +195,38 @@ export default function LoginScreen() {
               <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
                 <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={16} color={palette.textMuted} />
               </TouchableOpacity>
-            </View>
+              </View>
+            </Animated.View>
 
-            <TouchableOpacity style={styles.cta} onPress={handleLogin} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <>
-                  <Text style={styles.ctaText}>Login</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                </>
-              )}
-            </TouchableOpacity>
+            <Animated.View entering={FadeInDown.delay(380).duration(520)}>
+              <Animated.View style={ctaMotion}>
+                <Pressable
+                  style={styles.cta}
+                  onPress={handleLogin}
+                  onPressIn={handlePressIn}
+                  onPressOut={handlePressOut}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.ctaText}>Login</Text>
+                      <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                    </>
+                  )}
+                </Pressable>
+              </Animated.View>
+            </Animated.View>
 
             {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
             {/* social / oauth section */}
-            <Text style={styles.orText}>or</Text>
+            <Animated.Text entering={FadeInDown.delay(460).duration(520)} style={styles.orText}>or</Animated.Text>
             <View style={styles.socialRow}>
               {oauthProviders.map((p) => (
-                <TouchableOpacity
+                <Animated.View key={p.key} entering={FadeInDown.delay(520 + oauthProviders.indexOf(p) * 70).duration(520)}>
+                  <TouchableOpacity
                   key={p.key}
                   style={[styles.socialBtn, { borderColor: p.color }]}
                   onPress={() => handleOAuthLogin(p.key)}
@@ -197,17 +234,18 @@ export default function LoginScreen() {
                 >
                   <Ionicons name={p.icon as any} size={16} color={p.color} />
                   <Text style={styles.socialTxt}>Continue with {p.label}</Text>
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                </Animated.View>
               ))}
             </View>
 
-            <View style={styles.switchRow}>
+            <Animated.View entering={FadeInDown.delay(760).duration(520)} style={styles.switchRow}>
               <Text style={styles.switchText}>New user?</Text>
               <TouchableOpacity onPress={() => router.replace('/auth/signup')}>
                 <Text style={styles.switchLink}>Create account</Text>
               </TouchableOpacity>
-            </View>
-          </View>
+            </Animated.View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

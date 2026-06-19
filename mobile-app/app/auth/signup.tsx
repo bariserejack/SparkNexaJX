@@ -4,12 +4,13 @@
 // a backend or third-party service (e.g. Twilio) configured via environment
 // variables shown in .env.example.
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +21,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInRight,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { Theme } from '../../constants/Theme';
 import { supabase } from '../../lib/supabase';
@@ -38,6 +48,9 @@ type Step = 1 | 2 | 3 | 4; // added step 4 for phone OTP verification
 
 export default function SignUpScreen() {
   const [step, setStep] = useState<Step>(1);
+  const ctaScale = useSharedValue(1);
+  const progress = useSharedValue(1 / 3);
+
   const handleBack = () => {
     if (step > 1) {
       setStep((prev) => (prev > 1 ? ((prev - 1) as Step) : prev));
@@ -56,6 +69,18 @@ export default function SignUpScreen() {
   const [verifying, setVerifying] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
+
+  const totalSteps = phone ? 4 : 3;
+  const progressMotion = useAnimatedStyle(() => ({
+    width: `${progress.value * 100}%`,
+  }));
+  const ctaMotion = useAnimatedStyle(() => ({
+    transform: [{ scale: ctaScale.value }],
+  }));
+
+  useEffect(() => {
+    progress.value = withTiming(step / totalSteps, { duration: 360, easing: Easing.out(Easing.cubic) });
+  }, [progress, step, totalSteps]);
 
   const passwordStrength = useMemo(() => {
     if (password.length === 0) return { label: 'Empty', percent: 0, color: '#CBD5E1' };
@@ -171,6 +196,14 @@ export default function SignUpScreen() {
     router.replace('/auth/login');
   }
 
+  function handlePressIn() {
+    ctaScale.value = withTiming(0.97, { duration: 100, easing: Easing.out(Easing.quad) });
+  }
+
+  function handlePressOut() {
+    ctaScale.value = withTiming(1, { duration: 160, easing: Easing.out(Easing.back(1.3)) });
+  }
+
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -182,35 +215,30 @@ export default function SignUpScreen() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
+          <Animated.View entering={FadeInUp.duration(560).springify()} style={styles.header}>
             <View style={styles.topRow}>
               <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
                 <Ionicons name="chevron-back" size={16} color={palette.text} />
               </TouchableOpacity>
               <Text style={styles.stepLabel}>
-                Step {step} of {phone ? 4 : 3}
+                Step {step} of {totalSteps}
               </Text>
             </View>
             <View style={styles.progressTrack}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${(step / (phone ? 4 : 3)) * 100}%` },
-                ]}
-              />
+              <Animated.View style={[styles.progressFill, progressMotion]} />
             </View>
-          </View>
+          </Animated.View>
 
-            <View style={styles.card}>
-              <View style={styles.logoRow}>
+            <Animated.View entering={FadeInDown.delay(120).duration(650).springify()} style={styles.card}>
+              <Animated.View entering={FadeInDown.delay(220).duration(520)} style={styles.logoRow}>
                 <AppLogo size={64} />
                 <Text style={styles.appName}>SparkNexaJX</Text>
-              </View>
-            <Text style={styles.title}>Create Account</Text>
+              </Animated.View>
+            <Animated.Text entering={FadeInDown.delay(280).duration(520)} style={styles.title}>Create Account</Animated.Text>
             {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
             {step === 1 && (
-              <>
+              <Animated.View key="step-1" entering={FadeInRight.duration(420)}>
                 <Text style={styles.label}>Full Name</Text>
                 <View style={styles.inputWrap}>
                   <Ionicons name="person-outline" size={16} color={palette.textMuted} />
@@ -244,15 +272,17 @@ export default function SignUpScreen() {
                     placeholderTextColor="#94A3B8"
                   />
                 </View>
-                <TouchableOpacity style={styles.cta} onPress={goNext}>
-                  <Text style={styles.ctaText}>Continue</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-              </>
+                <Animated.View style={ctaMotion}>
+                  <Pressable style={styles.cta} onPress={goNext} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+                    <Text style={styles.ctaText}>Continue</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                  </Pressable>
+                </Animated.View>
+              </Animated.View>
             )}
 
             {step === 2 && (
-              <>
+              <Animated.View key="step-2" entering={FadeInRight.duration(420)}>
                 <Text style={styles.label}>Email</Text>
                 <View style={styles.inputWrap}>
                   <Ionicons name="mail-outline" size={16} color={palette.textMuted} />
@@ -278,15 +308,17 @@ export default function SignUpScreen() {
                     placeholderTextColor="#94A3B8"
                   />
                 </View>
-                <TouchableOpacity style={styles.cta} onPress={goNext}>
-                  <Text style={styles.ctaText}>Continue</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-              </>
+                <Animated.View style={ctaMotion}>
+                  <Pressable style={styles.cta} onPress={goNext} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+                    <Text style={styles.ctaText}>Continue</Text>
+                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                  </Pressable>
+                </Animated.View>
+              </Animated.View>
             )}
 
             {step === 3 && (
-              <>
+              <Animated.View key="step-3" entering={FadeInRight.duration(420)}>
                 <Text style={styles.label}>Password</Text>
                 <View style={styles.inputWrap}>
                   <Ionicons name="lock-closed-outline" size={16} color={palette.textMuted} />
@@ -315,30 +347,38 @@ export default function SignUpScreen() {
                   <Text style={[styles.strengthLabel, { color: passwordStrength.color }]}>{passwordStrength.label}</Text>
                 </View>
 
-                <TouchableOpacity style={styles.cta} onPress={handleCreateAccount} disabled={loading}>
-                  {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.ctaText}>Create Account</Text>
-                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                    </>
-                  )}
-                </TouchableOpacity>
-              </>
+                <Animated.View style={ctaMotion}>
+                  <Pressable
+                    style={styles.cta}
+                    onPress={handleCreateAccount}
+                    onPressIn={handlePressIn}
+                    onPressOut={handlePressOut}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Text style={styles.ctaText}>Create Account</Text>
+                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                      </>
+                    )}
+                  </Pressable>
+                </Animated.View>
+              </Animated.View>
             )}
             {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
 
             {(step !== 4) && (
-              <View style={styles.switchRow}>
+              <Animated.View entering={FadeInDown.delay(120).duration(420)} style={styles.switchRow}>
                 <Text style={styles.switchText}>Already signed up?</Text>
                 <TouchableOpacity onPress={() => router.replace('/auth/login')}>
                   <Text style={styles.switchLink}>Login</Text>
                 </TouchableOpacity>
-              </View>
+              </Animated.View>
             )}
             {step === 4 && (
-              <>
+              <Animated.View key="step-4" entering={FadeInRight.duration(420)}>
                 <Text style={styles.label}>Verification code</Text>
                 <View style={styles.inputWrap}>
                   <Ionicons name="key-outline" size={16} color={palette.textMuted} />
@@ -351,23 +391,27 @@ export default function SignUpScreen() {
                     placeholderTextColor="#94A3B8"
                   />
                 </View>
-                <TouchableOpacity
-                  style={styles.cta}
-                  onPress={verifyCode}
-                  disabled={verifying}
-                >
-                  {verifying ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.ctaText}>Verify</Text>
-                  )}
-                </TouchableOpacity>
+                <Animated.View style={ctaMotion}>
+                  <Pressable
+                    style={styles.cta}
+                    onPress={verifyCode}
+                    onPressIn={handlePressIn}
+                    onPressOut={handlePressOut}
+                    disabled={verifying}
+                  >
+                    {verifying ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.ctaText}>Verify</Text>
+                    )}
+                  </Pressable>
+                </Animated.View>
                 <TouchableOpacity onPress={sendVerificationCode} style={styles.resendLink}>
                   <Text style={styles.resendText}>Resend code</Text>
                 </TouchableOpacity>
-              </>
+              </Animated.View>
             )}
-          </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

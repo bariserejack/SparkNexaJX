@@ -1,11 +1,19 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Theme } from '../../constants/Theme';
 import { useAppTheme } from '../../lib/theme';
+import Animated, {
+  Easing,
+  FadeInDown,
+  FadeInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 const categories = ['All', 'Hair', 'Beauty', 'Repairs', 'Design', 'Events'];
 
@@ -77,6 +85,106 @@ const listings = [
   },
 ];
 
+type Listing = (typeof listings)[number];
+
+function MarketplaceListingCard({
+  listing,
+  index,
+  activeTheme,
+}: {
+  listing: Listing;
+  index: number;
+  activeTheme: ReturnType<typeof useAppTheme>['activeTheme'];
+}) {
+  const scale = useSharedValue(1);
+  const lift = useSharedValue(0);
+
+  const cardMotion = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: lift.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withTiming(0.985, { duration: 110, easing: Easing.out(Easing.quad) });
+    lift.value = withTiming(-3, { duration: 110, easing: Easing.out(Easing.quad) });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withTiming(1, { duration: 170, easing: Easing.out(Easing.back(1.25)) });
+    lift.value = withTiming(0, { duration: 170, easing: Easing.out(Easing.quad) });
+  };
+
+  return (
+    <Animated.View entering={FadeInRight.delay(index * 70).duration(420)}>
+      <Animated.View style={cardMotion}>
+        <Pressable
+          onPress={() => router.push(`/marketplace/${listing.id}`)}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={[
+            styles.listingCard,
+            { backgroundColor: activeTheme.cardElevated, borderColor: activeTheme.border, shadowColor: activeTheme.shadow },
+          ]}
+        >
+          <View style={[styles.listingVisual, { backgroundColor: `${listing.accent}1F` }]}>
+            <LinearGradient colors={[`${listing.accent}E6`, `${listing.accent}5C`]} style={StyleSheet.absoluteFillObject} />
+            <Ionicons name={listing.icon as any} size={26} color="#FFFFFF" />
+          </View>
+          <View style={styles.listingBody}>
+            <View style={styles.listingTopRow}>
+              <Text style={[styles.listingCategory, { color: listing.accent }]}>{listing.category}</Text>
+              <View style={[styles.ratingPill, { backgroundColor: activeTheme.background }]}>
+                <Ionicons name="star" size={11} color="#F59E0B" />
+                <Text style={[styles.ratingText, { color: activeTheme.text }]}>{listing.rating}</Text>
+              </View>
+            </View>
+            <Text style={[styles.listingTitle, { color: activeTheme.text }]} numberOfLines={2}>
+              {listing.title}
+            </Text>
+            <Text style={[styles.sellerText, { color: activeTheme.textMuted }]} numberOfLines={1}>
+              {listing.seller}
+            </Text>
+            <View style={styles.listingMetaRow}>
+              <View style={[styles.metaBadge, { backgroundColor: activeTheme.background }]}>
+                <Ionicons name="location-outline" size={11} color={activeTheme.textMuted} />
+                <Text style={[styles.metaBadgeText, { color: activeTheme.textMuted }]}>{listing.distance}</Text>
+              </View>
+              <View style={[styles.metaBadge, { backgroundColor: activeTheme.background }]}>
+                <Ionicons name="briefcase-outline" size={11} color={activeTheme.textMuted} />
+                <Text style={[styles.metaBadgeText, { color: activeTheme.textMuted }]}>{listing.serviceMode}</Text>
+              </View>
+            </View>
+            <View style={styles.priceRow}>
+              <View>
+                <Text style={[styles.priceText, { color: activeTheme.text }]}>${listing.price}</Text>
+                <Text style={[styles.depositText, { color: activeTheme.textMuted }]}>Deposit ${listing.deposit}</Text>
+              </View>
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={[styles.chatButton, { backgroundColor: activeTheme.background }]}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    router.push({ pathname: '/pulse', params: { dmName: listing.seller, dmColor: listing.accent } });
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Chat with ${listing.seller}`}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={14} color={Theme.brand.primary} />
+                </TouchableOpacity>
+                <View style={[styles.arrowButton, { backgroundColor: Theme.brand.primary }]}>
+                  <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                </View>
+              </View>
+            </View>
+          </View>
+        </Pressable>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 export default function MarketplaceScreen() {
   const { activeTheme, isDark } = useAppTheme();
   const params = useLocalSearchParams<{ category?: string }>();
@@ -100,7 +208,7 @@ export default function MarketplaceScreen() {
     <View style={[styles.container, { backgroundColor: activeTheme.background }]}>
       <View style={[styles.glowTop, { opacity: isDark ? 0.16 : 0.08 }]} />
 
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(480)} style={styles.header}>
         <TouchableOpacity
           onPress={() => router.replace('/(tabs)')}
           style={[styles.headerButton, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}
@@ -121,9 +229,10 @@ export default function MarketplaceScreen() {
         >
           <Ionicons name="add" size={17} color={Theme.brand.primary} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Animated.View entering={FadeInDown.delay(90).duration(560)}>
         <BlurView
           intensity={isDark ? 30 : 65}
           tint={isDark ? 'dark' : 'light'}
@@ -152,8 +261,9 @@ export default function MarketplaceScreen() {
             <Text style={styles.heroPriceValue}>$25</Text>
           </View>
         </BlurView>
+        </Animated.View>
 
-        <View style={styles.trustRow}>
+        <Animated.View entering={FadeInDown.delay(170).duration(520)} style={styles.trustRow}>
           <View style={[styles.trustTile, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
             <Text style={[styles.trustValue, { color: activeTheme.text }]}>4.9</Text>
             <Text style={[styles.trustLabel, { color: activeTheme.textMuted }]}>Avg rating</Text>
@@ -166,9 +276,9 @@ export default function MarketplaceScreen() {
             <Text style={[styles.trustValue, { color: activeTheme.text }]}>Safe</Text>
             <Text style={[styles.trustLabel, { color: activeTheme.textMuted }]}>Deposits</Text>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={[styles.searchBar, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
+        <Animated.View entering={FadeInDown.delay(240).duration(520)} style={[styles.searchBar, { backgroundColor: activeTheme.card, borderColor: activeTheme.border }]}>
           <Ionicons name="search-outline" size={16} color={activeTheme.textMuted} />
           <TextInput
             value={query}
@@ -177,25 +287,26 @@ export default function MarketplaceScreen() {
             placeholderTextColor={activeTheme.textMuted}
             style={[styles.searchInput, { color: activeTheme.text }]}
           />
-        </View>
+        </Animated.View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryTrack}>
-          {categories.map((category) => {
+          {categories.map((category, index) => {
             const active = activeCategory === category;
             return (
-              <TouchableOpacity
-                key={category}
-                onPress={() => setActiveCategory(category)}
-                style={[
-                  styles.categoryButton,
-                  {
-                    backgroundColor: active ? Theme.brand.primary : activeTheme.card,
-                    borderColor: active ? Theme.brand.primary : activeTheme.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.categoryText, { color: active ? '#FFFFFF' : activeTheme.textMuted }]}>{category}</Text>
-              </TouchableOpacity>
+              <Animated.View key={category} entering={FadeInRight.delay(280 + index * 45).duration(360)}>
+                <TouchableOpacity
+                  onPress={() => setActiveCategory(category)}
+                  style={[
+                    styles.categoryButton,
+                    {
+                      backgroundColor: active ? Theme.brand.primary : activeTheme.card,
+                      borderColor: active ? Theme.brand.primary : activeTheme.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.categoryText, { color: active ? '#FFFFFF' : activeTheme.textMuted }]}>{category}</Text>
+                </TouchableOpacity>
+              </Animated.View>
             );
           })}
         </ScrollView>
@@ -210,65 +321,13 @@ export default function MarketplaceScreen() {
         <Text style={[styles.sectionMeta, { color: activeTheme.textMuted }]}>{filteredListings.length} services near you</Text>
 
         <View style={styles.listGrid}>
-          {filteredListings.map((listing) => (
-            <TouchableOpacity
+          {filteredListings.map((listing, index) => (
+            <MarketplaceListingCard
               key={listing.id}
-              activeOpacity={0.88}
-              onPress={() => router.push(`/marketplace/${listing.id}`)}
-              style={[styles.listingCard, { backgroundColor: activeTheme.cardElevated, borderColor: activeTheme.border, shadowColor: activeTheme.shadow }]}
-            >
-              <View style={[styles.listingVisual, { backgroundColor: `${listing.accent}1F` }]}>
-                <LinearGradient colors={[`${listing.accent}E6`, `${listing.accent}5C`]} style={StyleSheet.absoluteFillObject} />
-                <Ionicons name={listing.icon as any} size={26} color="#FFFFFF" />
-              </View>
-              <View style={styles.listingBody}>
-                <View style={styles.listingTopRow}>
-                  <Text style={[styles.listingCategory, { color: listing.accent }]}>{listing.category}</Text>
-                  <View style={[styles.ratingPill, { backgroundColor: activeTheme.background }]}>
-                    <Ionicons name="star" size={11} color="#F59E0B" />
-                    <Text style={[styles.ratingText, { color: activeTheme.text }]}>{listing.rating}</Text>
-                  </View>
-                </View>
-                <Text style={[styles.listingTitle, { color: activeTheme.text }]} numberOfLines={2}>
-                  {listing.title}
-                </Text>
-                <Text style={[styles.sellerText, { color: activeTheme.textMuted }]} numberOfLines={1}>
-                  {listing.seller}
-                </Text>
-                <View style={styles.listingMetaRow}>
-                  <View style={[styles.metaBadge, { backgroundColor: activeTheme.background }]}>
-                    <Ionicons name="location-outline" size={11} color={activeTheme.textMuted} />
-                    <Text style={[styles.metaBadgeText, { color: activeTheme.textMuted }]}>{listing.distance}</Text>
-                  </View>
-                  <View style={[styles.metaBadge, { backgroundColor: activeTheme.background }]}>
-                    <Ionicons name="briefcase-outline" size={11} color={activeTheme.textMuted} />
-                    <Text style={[styles.metaBadgeText, { color: activeTheme.textMuted }]}>{listing.serviceMode}</Text>
-                  </View>
-                </View>
-                <View style={styles.priceRow}>
-                  <View>
-                    <Text style={[styles.priceText, { color: activeTheme.text }]}>${listing.price}</Text>
-                    <Text style={[styles.depositText, { color: activeTheme.textMuted }]}>Deposit ${listing.deposit}</Text>
-                  </View>
-                  <View style={styles.cardActions}>
-                    <TouchableOpacity
-                      style={[styles.chatButton, { backgroundColor: activeTheme.background }]}
-                      onPress={(event) => {
-                        event.stopPropagation();
-                        router.push({ pathname: '/pulse', params: { dmName: listing.seller, dmColor: listing.accent } });
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Chat with ${listing.seller}`}
-                    >
-                      <Ionicons name="chatbubble-ellipses-outline" size={14} color={Theme.brand.primary} />
-                    </TouchableOpacity>
-                    <View style={[styles.arrowButton, { backgroundColor: Theme.brand.primary }]}>
-                      <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
+              listing={listing}
+              index={index}
+              activeTheme={activeTheme}
+            />
           ))}
         </View>
       </ScrollView>

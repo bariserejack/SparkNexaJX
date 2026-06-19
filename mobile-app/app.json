@@ -41,7 +41,9 @@
           "image": "./assets/images/brand.logo.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "tsconfigPaths": true
